@@ -1,0 +1,49 @@
+// Command to run migration:
+// npx prisma migrate dev 
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique
+  fullname      String?
+  email         String    @unique
+  password      String?
+  photo         String?
+  role          Role      @default(Customer)
+  is_verified   Boolean   @default(false)
+  refresh_token String?   @db.Text
+
+  otps          OtpCode[]
+
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+}
+
+enum Role {
+  Customer
+  Admin
+}
+
+model OtpCode {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  code       String   
+  type       OtpType
+  expires_at DateTime
+  used_at    DateTime?
+  created_at DateTime  @default(now())
+}
+
+enum OtpType {
+  REGISTER
+  RESET_PASSWORD
+}
