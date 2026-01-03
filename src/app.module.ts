@@ -11,7 +11,7 @@ import { AuthModule } from './modules/auth/auth.module';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
-      envFilePath: '.env.development',
+      envFilePath: '.env.development.local',
     }),
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60_000, limit: 20 }],
