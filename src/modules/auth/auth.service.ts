@@ -313,6 +313,9 @@ export class AuthService {
 
     return {
       message: 'Login berhasil',
+      data: {
+        role: user.role,
+      },
       ...tokens,
     };
   }

@@ -74,4 +74,21 @@ export class UsersService {
       data: { is_verified: true },
     });
   }
+
+  async findAllPaginated(page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return { items, total, totalPages };
+  }
 }

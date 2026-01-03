@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
@@ -6,11 +6,17 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { Role } from '@prisma/client';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @ApiTags('Users')
 @ApiBearerAuth('access-token') // nama scheme harus sama dengan yang kamu set di DocumentBuilder
@@ -65,6 +71,50 @@ export class UsersController {
     return {
       message: 'Profil berhasil diperbarui',
       user: rest,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @Get()
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Ambil daftar semua user (khusus Admin)',
+    description:
+      'Mengambil daftar user dengan pagination. Hanya bisa diakses oleh user dengan role Admin.',
+  })
+  @ApiOkResponse({
+    description: 'Berhasil mengambil daftar user.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token tidak valid atau tidak dikirim.',
+  })
+  @ApiForbiddenResponse({
+    description: 'User tidak memiliki akses (bukan Admin).',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: 1,
+    description: 'Nomor halaman (mulai dari 1). Default: 1',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: 10,
+    description: 'Jumlah item per halaman. Default: 10',
+  })
+  async getAllUsers(@Query() pagination: PaginationDto) {
+    const { page, limit } = pagination;
+
+    const data = await this.usersService.findAllPaginated(page, limit);
+    return {
+      message: 'Berhasil mengambil daftar user',
+      page,
+      limit,
+      ...data,
     };
   }
 }
