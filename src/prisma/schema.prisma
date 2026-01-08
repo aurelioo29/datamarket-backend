@@ -11,20 +11,21 @@ generator client {
 }
 
 model User {
-  id            Int       @id @default(autoincrement())
-  username      String    @unique
+  id            Int     @id @default(autoincrement())
+  username      String  @unique
   fullname      String?
-  email         String    @unique
+  email         String  @unique
   password      String?
   photo         String?
-  role          Role      @default(Customer)
-  is_verified   Boolean   @default(false)
-  refresh_token String?   @db.Text
+  role          Role    @default(Customer)
+  is_verified   Boolean @default(false)
+  refresh_token String? @db.Text
 
-  otps          OtpCode[]
+  otps OtpCode[]
 
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @updatedAt
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  purchases  Purchase[]
 }
 
 enum Role {
@@ -36,14 +37,86 @@ model OtpCode {
   id         Int       @id @default(autoincrement())
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     Int
-  code       String   
+  code       String
   type       OtpType
   expires_at DateTime
   used_at    DateTime?
   created_at DateTime  @default(now())
+
+  @@index([userId, type])
 }
 
 enum OtpType {
   REGISTER
   RESET_PASSWORD
+}
+
+model Dataset {
+  id          Int     @id @default(autoincrement())
+  slug        String  @unique
+  title       String
+  short_desc  String
+  description String?
+  domain      String?
+  price       Int
+  currency    String  @default("IDR")
+  thumbnail   String?
+  sample_url  String?
+  file_path   String
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+
+  is_active   Boolean    @default(true)
+  is_featured Boolean    @default(false)
+  tags        String?
+  purchases   Purchase[]
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+}
+
+model Purchase {
+  id Int @id @default(autoincrement())
+
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  dataset   Dataset @relation(fields: [datasetId], references: [id])
+  datasetId Int
+
+  // Harga + currency snapshot
+  price_paid Int
+  currency   String @default("IDR")
+
+  // Buat Midtrans
+  order_id     String    @unique
+  payment_ref  String?
+  payment_type String?
+  paid_at      DateTime?
+
+  // License dan download tracking
+  license_code     String    @unique
+  download_count   Int       @default(0)
+  last_download_at DateTime?
+
+  status PurchaseStatus @default(PENDING)
+
+  created_at DateTime @default(now())
+
+  @@index([userId, datasetId])
+}
+
+enum PurchaseStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Category {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  slug       String    @unique
+  datasets   Dataset[]
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
 }
