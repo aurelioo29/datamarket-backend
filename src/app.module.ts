@@ -5,6 +5,7 @@ import { PrismaService } from './prisma/prisma.service';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CategoryModule } from './modules/datasets/category/category.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthModule } from './modules/auth/auth.module';
     }),
     UsersModule,
     AuthModule,
+    CategoryModule,
   ],
   providers: [PrismaService],
 })
