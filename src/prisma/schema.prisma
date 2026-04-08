@@ -25,7 +25,6 @@ model User {
 
   created_at DateTime   @default(now())
   updated_at DateTime   @updatedAt
-  purchases  Purchase[]
 }
 
 enum Role {
@@ -70,46 +69,8 @@ model Dataset {
   is_active   Boolean    @default(true)
   is_featured Boolean    @default(false)
   tags        String?
-  purchases   Purchase[]
   created_at  DateTime   @default(now())
   updated_at  DateTime   @updatedAt
-}
-
-model Purchase {
-  id Int @id @default(autoincrement())
-
-  user      User    @relation(fields: [userId], references: [id])
-  userId    Int
-  dataset   Dataset @relation(fields: [datasetId], references: [id])
-  datasetId Int
-
-  // Harga + currency snapshot
-  price_paid Int
-  currency   String @default("IDR")
-
-  // Buat Midtrans
-  order_id     String    @unique
-  payment_ref  String?
-  payment_type String?
-  paid_at      DateTime?
-
-  // License dan download tracking
-  license_code     String    @unique
-  download_count   Int       @default(0)
-  last_download_at DateTime?
-
-  status PurchaseStatus @default(PENDING)
-
-  created_at DateTime @default(now())
-
-  @@index([userId, datasetId])
-}
-
-enum PurchaseStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
 }
 
 model Category {
