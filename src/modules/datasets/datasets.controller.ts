@@ -11,13 +11,11 @@ import {
   ParseIntPipe,
   UploadedFiles,
   UseInterceptors,
-  Res,
   ForbiddenException,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { Response } from 'express';
+import { extname } from 'path';
 
 import { DatasetsService } from './datasets.service';
 import { QueryDatasetDto } from './dto/query-dataset.dto';
@@ -26,7 +24,6 @@ import { UpdateDatasetDto } from './dto/update-dataset.dto';
 
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { GetUser } from 'src/common/decorators/get-user.decorator';
 
 import {
   ApiBearerAuth,
@@ -36,8 +33,6 @@ import {
   ApiParam,
   ApiQuery,
   ApiBody,
-  ApiOkResponse,
-  ApiCreatedResponse,
 } from '@nestjs/swagger';
 
 function safeFilename(file: Express.Multer.File) {
@@ -65,7 +60,7 @@ export class DatasetsController {
 
   // PUBLIC: detail
   @Get(':slug')
-  @ApiOperation({ summary: 'Detail dataset (public)' })
+  @ApiOperation({ summary: 'Detail dataset by slug (public)' })
   @ApiParam({ name: 'slug' })
   findOne(@Param('slug') slug: string) {
     return this.service.findBySlug(slug);
@@ -112,7 +107,7 @@ export class DatasetsController {
           }
           cb(null, false);
         },
-        limits: { fileSize: 50 * 1024 * 1024 }, // 50MB contoh
+        limits: { fileSize: 50 * 1024 * 1024 },
       },
     ),
   )
@@ -171,33 +166,19 @@ export class DatasetsController {
   @Roles('Admin')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Update dataset (Admin)' })
+  @ApiParam({ name: 'id' })
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateDatasetDto) {
     return this.service.update(id, dto);
   }
 
-  // ADMIN: delete (soft)
+  // ADMIN: soft delete
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @Roles('Admin')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Delete dataset (Admin) - soft delete' })
+  @ApiOperation({ summary: 'Soft delete dataset (Admin)' })
+  @ApiParam({ name: 'id' })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.softDelete(id);
-  }
-
-  // CUSTOMER: download (must have PAID purchase)
-  @Get(':slug/download')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Download dataset (Customer) - must be PAID' })
-  async download(
-    @Param('slug') slug: string,
-    @GetUser('sub') userId: number,
-    @Res() res: Response,
-  ) {
-    const file = await this.service.getDownloadFile(slug, userId);
-
-    // stream file
-    return res.download(join(process.cwd(), file.file_path));
   }
 }

@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,7 +7,6 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateDatasetDto } from './dto/create-dataset.dto';
 import { UpdateDatasetDto } from './dto/update-dataset.dto';
 import { QueryDatasetDto } from './dto/query-dataset.dto';
-import { PurchaseStatus } from '@prisma/client';
 
 @Injectable()
 export class DatasetsService {
@@ -70,7 +68,6 @@ export class DatasetsService {
     dto: CreateDatasetDto,
     extra: { file_path: string; thumbnail: string | null },
   ) {
-    // pastikan category ada
     const cat = await this.prisma.category.findUnique({
       where: { id: dto.categoryId },
     });
@@ -113,35 +110,5 @@ export class DatasetsService {
       where: { id },
       data: { is_active: false },
     });
-  }
-
-  async getDownloadFile(slug: string, userId: number) {
-    const dataset = await this.prisma.dataset.findUnique({ where: { slug } });
-    if (!dataset || !dataset.is_active)
-      throw new NotFoundException('Dataset tidak ditemukan');
-
-    // cek purchase PAID
-    const purchase = await this.prisma.purchase.findFirst({
-      where: {
-        userId,
-        datasetId: dataset.id,
-        status: PurchaseStatus.PAID,
-      },
-    });
-
-    if (!purchase) {
-      throw new ForbiddenException('Anda belum membeli dataset ini');
-    }
-
-    // tracking download
-    await this.prisma.purchase.update({
-      where: { id: purchase.id },
-      data: {
-        download_count: { increment: 1 },
-        last_download_at: new Date(),
-      },
-    });
-
-    return { file_path: dataset.file_path };
   }
 }
